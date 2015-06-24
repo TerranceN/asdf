@@ -1,0 +1,92 @@
+#!/bin/bash
+
+unhide_cursor() {
+    printf '\e[?25h'
+}
+trap unhide_cursor EXIT
+
+_key()
+{
+  local kp
+  ESC=$'\e'
+  _KEY=
+  IFS= read -d '' -r -sn1 _KEY
+  case $_KEY in
+    "$ESC")
+        while read -d '' -sn1 -t1 kp
+        do
+          _KEY=$_KEY$kp
+          case $kp in
+            [a-zA-NP-Z~]) break;;
+          esac
+        done
+    ;;
+  esac
+  printf -v "${1:-_KEY}" "%s" "$_KEY"
+}
+
+function _asdf() {
+    local text=""
+    local cursorPos=1
+
+    printf '\e[?25l'
+
+    while true; do
+        clear
+        echo "${text}"
+        eval printf %.1s '-{1..'"${COLUMNS:-$(tput cols)}"\}; echo
+        local lineNum=1
+        eval "history_fast_search ${text} | cut -c -$(expr ${COLUMNS:-$(tput cols)} - 2)" | while IFS= read -r line ; do
+            if [ $lineNum -eq $cursorPos ]; then
+                printf "\e[1;31m> %s\e[0;255m\n" "${line}"
+            else
+                printf "  %s\n" "${line}"
+            fi
+            lineNum=`expr $lineNum + 1`
+        done
+
+        _key char
+        local cmd="$(history_fast_search $text | head -n $cursorPos | tail -n 1)"
+        if [ "$char" == $'\n' ]; then
+            clear
+            unhide_cursor
+            local enter_esc=$'\x0a'
+            TYPE_CMD_ENABLED=yes TYPE_CMD_TYPE="${cmd}${enter_esc}" prefill
+            break
+        elif [ "$char" == " " ]; then
+            text="${text} "
+        elif [ "$char" == $'\177' ]; then
+            text="${text%?}"
+            cursorPos=1
+        elif [ "$char" == $'\e[D' ]; then
+            local file=`mktemp -t asdf`
+            perl -0pe "s/#[0-9]*\n$(printf '%q' "$(history_fast_search $text | head -n $cursorPos | tail -n 1)" | sed 's/\//\\\//g' | sed 's/@/\\@/g')\n//g" $HISTFILE > $file
+            local exitStatus=$?
+            if [ $exitStatus -eq 0 ] && [ `wc -c < "$file"` -gt 1000 ]; then
+              cp $HISTFILE "${HISTFILE}.backup"
+              cp $file $HISTFILE
+              cat $file
+              rm $file
+            else
+              clear
+              echo "ERROR editing history file!!!"
+              echo "Exit status: $exitStatus"
+              echo "New file size (must be > 1000 to accept): $(wc -c < "$file" | xargs)"
+              break
+            fi
+        elif [ "$char" == $'\e[C' ]; then
+          clear
+          TYPE_CMD_ENABLED=yes TYPE_CMD_TYPE="${cmd}" prefill
+          break
+        elif [ "$char" == $'\e[A' ]; then
+            cursorPos=`expr $cursorPos - 1`
+        elif [ "$char" == $'\e[B' ]; then
+            cursorPos=`expr $cursorPos + 1`
+        else
+            text="${text}${char}"
+            cursorPos=1
+        fi
+    done
+}
+
+_asdf $@

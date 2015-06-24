@@ -1,0 +1,11 @@
+#!/bin/bash
+
+function _history_fast_search() {
+    local greps=""
+    for word in $@; do
+        greps+=" | grep -i \"$word\""
+    done
+    eval "cat $HISTFILE | awk 'NR % 2 == 0' | tail -r | awk '!_[\$0]++' $greps | head -n `expr ${ROWS:-$(tput lines)} - 3`"
+}
+
+_history_fast_search $@
