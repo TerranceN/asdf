@@ -1,5 +1,4 @@
-ASDF
-####
+# ASDF
 
 A tool to search through your history.
 
@@ -17,14 +16,16 @@ Left           -> Delete the selected command from your history
 Right          -> Prefil your command prompt with the selected command
 
 Searching:
-![](http://g.recordit.co/7I3Tu3KjYJ.gif) ""
+
+![](http://g.recordit.co/7I3Tu3KjYJ.gif)
 
 Deleting:
-![](http://g.recordit.co/cw6GkdqNsU.gif) ""
+
+![](http://g.recordit.co/cw6GkdqNsU.gif)
 
 Prefilling:
-![](http://g.recordit.co/6s61L84C3w.gif) ""
 
+![](http://g.recordit.co/6s61L84C3w.gif)
 
 Installation
 ------------
